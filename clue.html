@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fallout Misterio</title>
+    <style>
+        body, html { 
+            margin: 0; 
+            padding: 0; 
+            height: 100%; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            font-family: 'Gothic 821 Condensed', Arial, sans-serif; 
+            color: green; 
+            background: url('C:\\FalloutCLUE\\Imagenes\\terminal.jpg') no-repeat center center/cover; /* Fondo permanente */
+            overflow: hidden;
+        }
+        #inicio { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: url('C:\\FalloutCLUE\\Imagenes\\refugio111.jpg') no-repeat center center/cover;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            flex-direction: column;
+        }
+        #inicio button {
+            padding: 15px 30px; 
+            font-size: 20px; 
+            background-color: #e74c3c; 
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            margin-top: 20px;
+        }
+        #videoContainer, #juego {
+            display: none;
+            width: 100%;
+            height: 100%;
+        }
+        #videoContainer video {
+            width: 100%; 
+            height: 100%;
+            object-fit: cover; 
+        }
+        #juego h1 { color: #e74c3c; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; background-color: #3498db; color: white; border: none; cursor: pointer; }
+        img { width: 100px; height: 100px; border-radius: 50%; margin: 10px; }
+        #log { margin-top: 20px; padding: 10px; background-color: #34495e; border-radius: 5px; text-align: left; overflow-y: auto; max-height: 200px; }
+        #sospechososContainer { display: flex; flex-wrap: wrap; max-height: 200px; overflow-y: auto; } /* Permite desplazamiento en la lista */
+        .sospechoso { width: 30%; text-align: center; } /* Tres personajes en fila */
+        #reiniciarBtn { display: none; }
+        #armaContainer { display: none; }
+    </style>
+</head>
+<body>
+
+<div id="inicio">
+    <h1>Bienvenido a Fallout CLUE</h1>
+    <button onclick="iniciarVideo()">Comenzar</button>
+</div>
+
+<div id="videoContainer">
+    <video id="introVideo" src="file:///C:/FalloutCLUE/Video/inicio.mp4" autoplay style="display: none;" onended="reproducirCadaverVideo()"></video>
+    <video id="cadaverVideo" autoplay controls style="display: none;"></video>
+    <video id="finalMaloVideo" src="file:///C:/FalloutCLUE/Video/finalmalovideo.mp4" autoplay style="display: none;" onended="finalMaloAlerta()"></video> <!-- Video final malo -->
+</div>
+
+<div id="juego">
+    <h1>Fallout CLUE</h1>
+    <p>Investiga hasta 5 salas del edificio para obtener pistas y resuelve el misterio.</p>
+
+    <div id="salas">
+        <!-- Botones de salas generados dinámicamente -->
+    </div>
+
+    <button onclick="mostrarSospechosos()" id="btnSospechosos">Hacer Acusación</button>
+
+    <div id="sospechosos" style="display: none;">
+        <h2>Elige al Culpable:</h2>
+        <div id="sospechososContainer">
+            <!-- Los personajes se agregarán aquí -->
+        </div>
+    </div>
+
+    <div id="armaContainer" style="display: none;">
+        <h2>Elige el arma utilizada:</h2>
+        <select id="armaSelect" onchange="elegirArma()">
+            <option value="" disabled selected>Selecciona un arma</option>
+            <option value="Pistola láser">Pistola láser</option>
+            <option value="Rifle de plasma">Rifle de plasma</option>
+            <option value="Granada de fragmentación">Granada de fragmentación</option>
+            <option value="Bate de béisbol modificado">Bate de béisbol modificado</option>
+            <option value="Lanza llamas">Lanza llamas</option>
+        </select>
+    </div>
+
+    <div id="log">
+        <h2>Registro de Investigación</h2>
+        <div id="resultados"></div>
+    </div>
+
+    <button id="reiniciarBtn" onclick="reiniciarJuego()">Reiniciar Juego</button>
+</div>
+
+<script>
+    let salaCrimen; 
+    let armaElegida; 
+    let culpable; 
+    let armaCrimen; 
+    let sospechosoElegido; 
+    let accionesRestantes = 5; // Limita las acciones del jugador a 5
+
+    const armas = ["Pistola láser", "Rifle de plasma", "Granada de fragmentación", "Bate de béisbol modificado", "Lanza llamas"];
+
+    // Pistas para cada personaje que tienen sentido con su profesión y arma
+    const pistasPorSala = {
+        "Sala de estar": {
+            "Nick Valentine": ["Documentos de casos antiguos tirados en el suelo.", "Restos de un viejo informe policial."],
+            "Paladin Danse": ["Huellas de botas militares en el suelo.", "Un cuchillo de combate en la esquina."],
+            "Piper Wright": ["Un cuaderno de notas caído en el suelo.", "Restos de cámaras de grabación."],
+            "Preston Garvey": ["Planos de un asentamiento abandonados en la mesa.", "Un rifle de asalto medio desarmado."],
+            "Curie": ["Un frasco de químicos sobre la mesa.", "Una tablet con notas científicas abiertas."]
+        },
+        "Cocina": {
+            "Nick Valentine": ["Un cigarrillo a medio fumar sobre la mesa.", "Una huella dactilar sospechosa en el cuchillo."],
+            "Paladin Danse": ["Cartuchos de munición cerca de la mesa.", "Un par de guantes tácticos en la encimera."],
+            "Piper Wright": ["Grabaciones de entrevistas en un rincón.", "Un bolígrafo roto en el suelo."],
+            "Preston Garvey": ["Una caja de municiones abierta.", "Restos de una linterna encendida sobre el refrigerador."],
+            "Curie": ["Notas de experimentos sobre la mesa.", "Un matraz de vidrio roto en el suelo."]
+        },
+        "Oficina": {
+            "Nick Valentine": ["Notas de casos archivadas en desorden.", "Un viejo sombrero de detective en la silla."],
+            "Paladin Danse": ["Un mapa táctico colgado en la pared.", "Marcas de botas en el piso."],
+            "Piper Wright": ["Papeles de investigación esparcidos por el escritorio.", "Una cámara de video tirada en la esquina."],
+            "Preston Garvey": ["Un viejo mapa de la ciudad en la pared.", "Una linterna en el escritorio."],
+            "Curie": ["Libros de química desordenados.", "Un microscopio apuntando hacia un vidrio."]
+        },
+        "Sótano": {
+            "Nick Valentine": ["Una linterna antigua.", "Pistas de una búsqueda minuciosa en las cajas."],
+            "Paladin Danse": ["Un casco militar sobre una caja.", "Restos de material de supervivencia militar."],
+            "Piper Wright": ["Notas tiradas en el suelo.", "Un dispositivo de grabación escondido en un rincón."],
+            "Preston Garvey": ["Un plano militar arrugado.", "Una pistola antigua abandonada."],
+            "Curie": ["Restos de químicos en el suelo.", "Un informe sobre experimentos fallidos."]
+        },
+        "Dormitorio": {
+            "Nick Valentine": ["Una libreta de direcciones sobre la cama.", "Huellas de zapatos por todo el piso."],
+            "Paladin Danse": ["Un par de botas tácticas junto a la cama.", "Una foto de un escuadrón militar en el suelo."],
+            "Piper Wright": ["Un bolígrafo en la mesa de noche.", "Un grabador de voz caído."],
+            "Preston Garvey": ["Un mapa de defensa junto a la cama.", "Una linterna en la cabecera."],
+            "Curie": ["Un diario de experimentos en la mesa.", "Un frasco de muestras sobre el escritorio."]
+        }
+    };
+
+    function iniciarVideo() {
+        document.getElementById("inicio").style.display = "none";
+        document.getElementById("videoContainer").style.display = "flex";
+        
+        const video = document.getElementById("introVideo");
+        video.style.display = "block"; 
+        video.play(); 
+
+        video.onended = reproducirCadaverVideo; 
+    }
+
+    function reproducirCadaverVideo() {
+        const video = document.getElementById("introVideo");
+        video.style.display = "none"; 
+
+        const salaOpciones = ["Sala de estar", "Cocina", "Oficina", "Sótano", "Dormitorio"];
+        salaCrimen = salaOpciones[Math.floor(Math.random() * salaOpciones.length)]; 
+        
+        const videoCadaver = document.getElementById("cadaverVideo");
+        videoCadaver.src = `file:///C:/FalloutCLUE/Video/cadaver_${salaCrimen.toLowerCase().replace(/ /g, '_')}.mp4`;
+        videoCadaver.style.display = "block"; 
+        videoCadaver.play(); 
+
+        videoCadaver.onended = iniciarJuego; 
+    }
+
+    function iniciarJuego() {
+        const videoCadaver = document.getElementById("cadaverVideo");
+        videoCadaver.style.display = "none"; 
+        document.getElementById("videoContainer").style.display = "none";
+        document.getElementById("juego").style.display = "block";
+
+        armaCrimen = armas[Math.floor(Math.random() * armas.length)]; 
+        generarSalas();
+        mostrarSalaCadaver(); 
+
+        culpable = personajes[Math.floor(Math.random() * personajes.length)].nombre;
+
+        asignarIndicios(); 
+    }
+
+    function mostrarSalaCadaver() {
+        const resultados = document.getElementById("resultados");
+        resultados.innerHTML += `<p>El cadáver se encontró en: ${salaCrimen}</p>`;
+    }
+
+    const personajes = [
+        { 
+            nombre: "Nick Valentine", 
+            profesion: "Detective", 
+            imagen: "C:\\FalloutCLUE\\Imagenes\\nick_valentine.jpg",
+            coartadas: [
+                "Estaba resolviendo un caso en una zona cercana.",
+                "Estaba interrogando a un sospechoso en el vecindario.",
+                "Revisaba archivos de casos antiguos en su oficina."
+            ]
+        },
+        { 
+            nombre: "Paladin Danse", 
+            profesion: "Soldado de la Hermandad de Acero", 
+            imagen: "C:\\FalloutCLUE\\Imagenes\\paladin_danse.jpg",
+            coartadas: [
+                "Estaba en una misión de patrullaje con la Hermandad.",
+                "Revisaba el equipo de combate en la base.",
+                "Estaba entrenando a un recluta."
+            ]
+        },
+        { 
+            nombre: "Piper Wright", 
+            profesion: "Periodista", 
+            imagen: "C:\\FalloutCLUE\\Imagenes\\piper_wright.jpg",
+            coartadas: [
+                "Estaba investigando un rumor en la ciudad.",
+                "Entrevistaba a un testigo para una historia.",
+                "Visitaba una zona para conseguir información."
+            ]
+        },
+        { 
+            nombre: "Preston Garvey", 
+            profesion: "Líder Minutemen", 
+            imagen: "C:\\FalloutCLUE\\Imagenes\\preston_garvey.jpg",
+            coartadas: [
+                "Estaba ayudando a un asentamiento cercano.",
+                "Coordinaba una misión de rescate con su equipo.",
+                "Estaba inspeccionando las defensas de un asentamiento."
+            ]
+        },
+        { 
+            nombre: "Curie", 
+            profesion: "Investigadora", 
+            imagen: "C:\\FalloutCLUE\\Imagenes\\curie.jpg",
+            coartadas: [
+                "Trabajaba en el laboratorio en un nuevo experimento.",
+                "Revisaba notas científicas en la biblioteca.",
+                "Asistía a una reunión con otros investigadores."
+            ]
+        }
+    ];
+
+    function asignarIndicios() {
+        const indicioPrincipal = indiciosCulpable[armaCrimen];
+        const otrosIndicios = Object.values(indiciosCulpable).filter(indicio => indicio !== indicioPrincipal);
+
+        personajes.forEach(personaje => {
+            if (personaje.nombre === culpable) {
+                personaje.indicio = indicioPrincipal;  // El culpable tiene el indicio del arma
+            } else {
+                // Los demás personajes reciben indicios alternativos
+                const indicioAleatorio = otrosIndicios[Math.floor(Math.random() * otrosIndicios.length)];
+                personaje.indicio = indicioAleatorio;
+            }
+        });
+    }
+
+    const indiciosCulpable = {
+        "Pistola láser": "tiene quemaduras en las manos.",
+        "Rifle de plasma": "muestra residuos verdes en su ropa.",
+        "Granada de fragmentación": "tiene heridas recientes, como de una explosión.",
+        "Bate de béisbol modificado": "muestra manchas de sangre en las manos.",
+        "Lanza llamas": "huele a combustible."
+    };
+
+    const pistas = {
+        "Sala de estar": ["Se encontraron huellas dactilares en el sofá.", "Un vaso roto en el suelo indica una lucha.", "Un libro abierto en el suelo parece haber sido revisado recientemente."],
+        "Cocina": ["Un cuchillo parece haber sido usado recientemente.", "Restos de comida en el mostrador sugieren una cena apresurada.", "Se escucha el ruido de una gotera."],
+        "Oficina": ["Documentos desordenados indican búsqueda de información.", "La computadora está encendida y con varios archivos abiertos.", "Una taza de café aún está caliente."],
+        "Sótano": ["Cajas rotas sugieren que alguien revisó el lugar apresuradamente.", "Se percibe un olor fuerte a productos químicos.", "Una linterna abandonada está encendida en el suelo."],
+        "Dormitorio": ["La cama está deshecha como si alguien hubiera revisado debajo.", "Una nota de advertencia está en el suelo.", "Una lámpara está rota al lado de la cama."]
+    };
+
+    function generarSalas() {
+        const salas = document.getElementById("salas");
+        const salaOpciones = ["Sala de estar", "Cocina", "Oficina", "Sótano", "Dormitorio"];
+        salas.innerHTML = ""; // Limpia el contenido previo
+
+        salaOpciones.forEach(sala => {
+            const boton = document.createElement("button");
+            boton.textContent = sala;
+            boton.onclick = () => investigarSala(sala);
+            salas.appendChild(boton);
+        });
+    }
+
+    function investigarSala(sala) {
+        if (accionesRestantes <= 0) {
+            alert("Has alcanzado el límite de acciones disponibles.");
+            return;
+        }
+        
+        const resultados = document.getElementById("resultados");
+        const pista = pistas[sala][Math.floor(Math.random() * pistas[sala].length)];
+        resultados.innerHTML += `<p>Investigaste la ${sala} y encontraste: ${pista}</p>`;
+        
+        accionesRestantes--;
+        
+        if (sala === salaCrimen) {
+            const indicio = obtenerIndicioMuerte();
+            resultados.innerHTML += `<p><strong>Indicio en el lugar del crimen: ${indicio}</strong></p>`;
+            document.getElementById("btnSospechosos").style.display = "block";
+        }
+    }
+
+    function mostrarSospechosos() {
+        document.getElementById("sospechosos").style.display = "block";
+        const sospechososContainer = document.getElementById("sospechososContainer");
+        sospechososContainer.innerHTML = ""; 
+
+        personajes.forEach(personaje => {
+            const sospechosoDiv = document.createElement("div");
+            sospechosoDiv.classList.add("sospechoso");
+            sospechosoDiv.innerHTML = `<img src="${personaje.imagen}" alt="${personaje.nombre}"><p>${personaje.nombre}<br><strong>${personaje.profesion}</strong></p>`;
+            
+            const preguntarBtn = document.createElement("button");
+            preguntarBtn.innerText = "Preguntar";
+            preguntarBtn.onclick = () => preguntar(personaje);
+            sospechosoDiv.appendChild(preguntarBtn);
+
+            const acusarBtn = document.createElement("button");
+            acusarBtn.innerText = "Acusar";
+            acusarBtn.onclick = () => elegirCulpable(personaje.nombre);
+            sospechosoDiv.appendChild(acusarBtn);
+
+            sospechososContainer.appendChild(sospechosoDiv);
+        });
+    }
+
+    function preguntar(personaje) {
+        if (accionesRestantes <= 0) {
+            alert("Has alcanzado el límite de acciones disponibles.");
+            return;
+        }
+
+        const resultados = document.getElementById("resultados");
+        const coartadaAleatoria = personaje.coartadas[Math.floor(Math.random() * personaje.coartadas.length)];
+        resultados.innerHTML += `<p>${personaje.nombre} dice: "${coartadaAleatoria}"</p>`;
+        
+        // Añade el indicio correspondiente
+        resultados.innerHTML += `<p>${personaje.nombre} parece sospechoso: "${personaje.indicio}"</p>`;
+        
+        accionesRestantes--;
+    }
+
+    function obtenerIndicioMuerte() {
+        switch (armaCrimen) {
+            case "Pistola láser": return "Se encontraron restos de quemaduras precisas como si hubiera sido disparado.";
+            case "Rifle de plasma": return "Se encontró una especie de masa verde como si alguien hubiera sido reducido a esto.";
+            case "Granada de fragmentación": return "Se puede observar que el cuerpo está totalmente desfigurado por una explosión.";
+            case "Bate de béisbol modificado": return "Se ve que el cuerpo fue golpeado con un objeto contundente que le rompió los huesos.";
+            case "Lanza llamas": return "El cuerpo fue reducido a cenizas.";
+            default: return "No se encontró indicio específico.";
+        }
+    }
+
+    function elegirCulpable(nombre) {
+        sospechosoElegido = nombre; 
+        const resultados = document.getElementById("resultados");
+        resultados.innerHTML += `<p>Acusaste a ${nombre} como posible culpable.</p>`;
+
+        document.getElementById("armaContainer").style.display = "block"; // Muestra la opción para elegir el arma
+    }
+
+    function elegirArma() {
+        const armaSelect = document.getElementById("armaSelect");
+        armaElegida = armaSelect.value; 
+
+        if (armaElegida) {
+            verificarAccusacion(); // Llama a la verificación inmediatamente
+        }
+    }
+
+    function verificarAccusacion() {
+        const resultados = document.getElementById("resultados");
+
+        if (armaElegida && sospechosoElegido) {
+            resultados.innerHTML += `<p>Acusaste a ${sospechosoElegido} de cometer el crimen con ${armaElegida}.</p>`;
+
+            if (sospechosoElegido === culpable && armaElegida === armaCrimen) {
+                resultados.innerHTML += `<p><strong>¡Felicidades, has logrado encontrar a tiempo al culpable!</strong></p>`;
+                alert("¡Felicidades, has logrado encontrar a tiempo al culpable!");
+                setTimeout(() => reiniciarJuego(), 3000);  // Reinicia el programa
+            } else if (sospechosoElegido !== culpable && armaElegida === armaCrimen) {
+                resultados.innerHTML += `<p><strong>A pesar de tener el arma, el criminal escapó por la distracción al no seleccionar a la persona indicada.</strong></p>`;
+                alert("A pesar de tener el arma, el criminal escapó.");
+                setTimeout(() => reiniciarJuego(), 3000);  // Reinicia el programa
+            } else if (sospechosoElegido === culpable && armaElegida !== armaCrimen) {
+                resultados.innerHTML += `<p><strong>Lamentablemente, acertaste al culpable, pero no al arma utilizada.</strong></p>`;
+                alert("Lamentablemente, acertaste al culpable, pero no al arma utilizada.");
+                setTimeout(() => reiniciarJuego(), 3000);  // Reinicia el programa
+            } else {
+                resultados.innerHTML += `<p><strong>Lamentablemente al no contar con el arma ni el culpable correctos no se tuvieron las suficientes pruebas para atrapar al perpetrador.</strong></p>`;
+                document.getElementById("videoContainer").style.display = "block";
+                document.getElementById("juego").style.display = "none"; // Oculta el juego
+                const finalMaloVideo = document.getElementById("finalMaloVideo");
+                finalMaloVideo.style.display = "block"; // Muestra el video del final malo
+                finalMaloVideo.play();
+                finalMaloVideo.onended = () => finalMaloAlerta(); // Muestra la alerta tras el video
+            }
+        } else {
+            alert("Debes elegir un arma y un sospechoso para hacer una acusación.");
+        }
+    }
+
+    function finalMaloAlerta() {
+        alert("Lamentablemente no has podido saber quién perpetró este crimen. Por eso, en Vault-Tec nos preocupamos por la seguridad de nuestros refugiados, así que se tomó la decisión más difícil y te expulsamos del refugio. Te deseamos la mejor de las suertes y gracias por elegir a ¡Vault-Tec!");
+        reiniciarJuego();
+    }
+
+    function reiniciarJuego() {
+        location.reload(); 
+    }
+</script>
+</body>
+</html>
