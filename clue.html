@@ -279,14 +279,6 @@
         "Lanza llamas": "huele a combustible."
     };
 
-    const pistas = {
-        "Sala de estar": ["Se encontraron huellas dactilares en el sofá.", "Un vaso roto en el suelo indica una lucha.", "Un libro abierto en el suelo parece haber sido revisado recientemente."],
-        "Cocina": ["Un cuchillo parece haber sido usado recientemente.", "Restos de comida en el mostrador sugieren una cena apresurada.", "Se escucha el ruido de una gotera."],
-        "Oficina": ["Documentos desordenados indican búsqueda de información.", "La computadora está encendida y con varios archivos abiertos.", "Una taza de café aún está caliente."],
-        "Sótano": ["Cajas rotas sugieren que alguien revisó el lugar apresuradamente.", "Se percibe un olor fuerte a productos químicos.", "Una linterna abandonada está encendida en el suelo."],
-        "Dormitorio": ["La cama está deshecha como si alguien hubiera revisado debajo.", "Una nota de advertencia está en el suelo.", "Una lámpara está rota al lado de la cama."]
-    };
-
     function generarSalas() {
         const salas = document.getElementById("salas");
         const salaOpciones = ["Sala de estar", "Cocina", "Oficina", "Sótano", "Dormitorio"];
@@ -307,8 +299,13 @@
         }
         
         const resultados = document.getElementById("resultados");
-        const pista = pistas[sala][Math.floor(Math.random() * pistas[sala].length)];
-        resultados.innerHTML += `<p>Investigaste la ${sala} y encontraste: ${pista}</p>`;
+
+        if (pistasPorSala[sala]) {
+            const personajesPistas = Object.keys(pistasPorSala[sala]);
+            const personaje = personajesPistas[Math.floor(Math.random() * personajesPistas.length)];
+            const pista = pistasPorSala[sala][personaje][Math.floor(Math.random() * pistasPorSala[sala][personaje].length)];
+            resultados.innerHTML += `<p>Investigaste la ${sala} y encontraste: ${pista}</p>`;
+        }
         
         accionesRestantes--;
         
@@ -316,6 +313,11 @@
             const indicio = obtenerIndicioMuerte();
             resultados.innerHTML += `<p><strong>Indicio en el lugar del crimen: ${indicio}</strong></p>`;
             document.getElementById("btnSospechosos").style.display = "block";
+        }
+
+        if (pistasPorSala[sala] && pistasPorSala[sala][culpable]) {
+            const pistasCulpableSala = pistasPorSala[sala][culpable].join(", ");
+            resultados.innerHTML += `<p><strong>Pistas relacionadas con ${culpable}:</strong> ${pistasCulpableSala}</p>`;
         }
     }
 
