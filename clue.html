@@ -52,8 +52,8 @@
         button { padding: 10px 20px; margin: 10px; font-size: 16px; background-color: #3498db; color: white; border: none; cursor: pointer; }
         img { width: 100px; height: 100px; border-radius: 50%; margin: 10px; }
         #log { margin-top: 20px; padding: 10px; background-color: #34495e; border-radius: 5px; text-align: left; overflow-y: auto; max-height: 200px; }
-        #sospechososContainer { display: flex; flex-wrap: wrap; max-height: 200px; overflow-y: auto; } /* Permite desplazamiento en la lista */
-        .sospechoso { width: 30%; text-align: center; } /* Tres personajes en fila */
+        #sospechososContainer { display: flex; flex-wrap: wrap; max-height: 200px; overflow-y: auto; } 
+        .sospechoso { width: 30%; text-align: center; } 
         #reiniciarBtn { display: none; }
         #armaContainer { display: none; }
     </style>
@@ -68,7 +68,7 @@
 <div id="videoContainer">
     <video id="introVideo" src="file:///C:/FalloutCLUE/Video/inicio.mp4" autoplay style="display: none;" onended="reproducirCadaverVideo()"></video>
     <video id="cadaverVideo" autoplay controls style="display: none;"></video>
-    <video id="finalMaloVideo" src="file:///C:/FalloutCLUE/Video/finalmalovideo.mp4" autoplay style="display: none;" onended="finalMaloAlerta()"></video> <!-- Video final malo -->
+    <video id="finalMaloVideo" src="file:///C:/FalloutCLUE/Video/finalmalovideo.mp4" autoplay style="display: none;" onended="finalMaloAlerta()"></video> 
 </div>
 
 <div id="juego">
@@ -76,15 +76,15 @@
     <p>Investiga hasta 5 salas del edificio para obtener pistas y resuelve el misterio.</p>
 
     <div id="salas">
-        <!-- Botones de salas generados dinámicamente -->
+       
     </div>
 
-    <button onclick="mostrarSospechosos()" id="btnSospechosos">Hacer Acusación</button>
+    <button onclick="mostrarSospechosos()" id="btnSospechosos">Personajes</button>
 
     <div id="sospechosos" style="display: none;">
         <h2>Elige al Culpable:</h2>
         <div id="sospechososContainer">
-            <!-- Los personajes se agregarán aquí -->
+           
         </div>
     </div>
 
@@ -114,11 +114,11 @@
     let culpable; 
     let armaCrimen; 
     let sospechosoElegido; 
-    let accionesRestantes = 5; // Limita las acciones del jugador a 5
+    let accionesRestantes = 5;
 
     const armas = ["Pistola láser", "Rifle de plasma", "Granada de fragmentación", "Bate de béisbol modificado", "Lanza llamas"];
 
-    // Pistas para cada personaje que tienen sentido con su profesión y arma
+    
     const pistasPorSala = {
         "Sala de estar": {
             "Nick Valentine": ["Documentos de casos antiguos tirados en el suelo.", "Restos de un viejo informe policial."],
@@ -169,20 +169,25 @@
     }
 
     function reproducirCadaverVideo() {
-        const video = document.getElementById("introVideo");
-        video.style.display = "none"; 
+    const video = document.getElementById("introVideo");
+    video.style.display = "none"; 
 
-        const salaOpciones = ["Sala de estar", "Cocina", "Oficina", "Sótano", "Dormitorio"];
-        salaCrimen = salaOpciones[Math.floor(Math.random() * salaOpciones.length)]; 
-        
-        const videoCadaver = document.getElementById("cadaverVideo");
-        videoCadaver.src = `file:///C:/FalloutCLUE/Video/cadaver_${salaCrimen.toLowerCase().replace(/ /g, '_')}.mp4`;
-        videoCadaver.style.display = "block"; 
-        videoCadaver.play(); 
+    const salaOpciones = ["Sala de estar", "Cocina", "Oficina", "Sótano", "Dormitorio"];
+    salaCrimen = salaOpciones[Math.floor(Math.random() * salaOpciones.length)]; 
 
-        videoCadaver.onended = iniciarJuego; 
-    }
+    const videoCadaver = document.getElementById("cadaverVideo");
+    videoCadaver.src = `file:///C:/FalloutCLUE/Video/cadaver_${salaCrimen.toLowerCase().replace(/ /g, '_')}.mp4`;
+    videoCadaver.style.display = "block"; 
+    videoCadaver.play(); 
 
+    videoCadaver.onended = mostrarAlertaInicio; 
+}
+
+
+function mostrarAlertaInicio() {
+    alert("Oh no, ¡alguien ha sido asesinado! Como supervisor, es tu deber averiguar quién. Te hemos ayudado con parte del trabajo y averiguamos dónde se encuentra. ¡Es tu deber descubrir quién fue y qué arma usó! ¡SUERTE!");
+    iniciarJuego(); 
+}
     function iniciarJuego() {
         const videoCadaver = document.getElementById("cadaverVideo");
         videoCadaver.style.display = "none"; 
@@ -262,9 +267,9 @@
 
         personajes.forEach(personaje => {
             if (personaje.nombre === culpable) {
-                personaje.indicio = indicioPrincipal;  // El culpable tiene el indicio del arma
+                personaje.indicio = indicioPrincipal; 
             } else {
-                // Los demás personajes reciben indicios alternativos
+                
                 const indicioAleatorio = otrosIndicios[Math.floor(Math.random() * otrosIndicios.length)];
                 personaje.indicio = indicioAleatorio;
             }
@@ -282,7 +287,7 @@
     function generarSalas() {
         const salas = document.getElementById("salas");
         const salaOpciones = ["Sala de estar", "Cocina", "Oficina", "Sótano", "Dormitorio"];
-        salas.innerHTML = ""; // Limpia el contenido previo
+        salas.innerHTML = ""; 
 
         salaOpciones.forEach(sala => {
             const boton = document.createElement("button");
@@ -355,7 +360,7 @@
         const coartadaAleatoria = personaje.coartadas[Math.floor(Math.random() * personaje.coartadas.length)];
         resultados.innerHTML += `<p>${personaje.nombre} dice: "${coartadaAleatoria}"</p>`;
         
-        // Añade el indicio correspondiente
+       
         resultados.innerHTML += `<p>${personaje.nombre} parece sospechoso: "${personaje.indicio}"</p>`;
         
         accionesRestantes--;
@@ -377,7 +382,7 @@
         const resultados = document.getElementById("resultados");
         resultados.innerHTML += `<p>Acusaste a ${nombre} como posible culpable.</p>`;
 
-        document.getElementById("armaContainer").style.display = "block"; // Muestra la opción para elegir el arma
+        document.getElementById("armaContainer").style.display = "block"; 
     }
 
     function elegirArma() {
@@ -385,7 +390,7 @@
         armaElegida = armaSelect.value; 
 
         if (armaElegida) {
-            verificarAccusacion(); // Llama a la verificación inmediatamente
+            verificarAccusacion();
         }
     }
 
@@ -398,23 +403,23 @@
             if (sospechosoElegido === culpable && armaElegida === armaCrimen) {
                 resultados.innerHTML += `<p><strong>¡Felicidades, has logrado encontrar a tiempo al culpable!</strong></p>`;
                 alert("¡Felicidades, has logrado encontrar a tiempo al culpable!");
-                setTimeout(() => reiniciarJuego(), 3000);  // Reinicia el programa
+                setTimeout(() => reiniciarJuego(), 3000);  
             } else if (sospechosoElegido !== culpable && armaElegida === armaCrimen) {
                 resultados.innerHTML += `<p><strong>A pesar de tener el arma, el criminal escapó por la distracción al no seleccionar a la persona indicada.</strong></p>`;
                 alert("A pesar de tener el arma, el criminal escapó.");
-                setTimeout(() => reiniciarJuego(), 3000);  // Reinicia el programa
+                setTimeout(() => reiniciarJuego(), 3000);  
             } else if (sospechosoElegido === culpable && armaElegida !== armaCrimen) {
                 resultados.innerHTML += `<p><strong>Lamentablemente, acertaste al culpable, pero no al arma utilizada.</strong></p>`;
                 alert("Lamentablemente, acertaste al culpable, pero no al arma utilizada.");
-                setTimeout(() => reiniciarJuego(), 3000);  // Reinicia el programa
+                setTimeout(() => reiniciarJuego(), 3000);  
             } else {
                 resultados.innerHTML += `<p><strong>Lamentablemente al no contar con el arma ni el culpable correctos no se tuvieron las suficientes pruebas para atrapar al perpetrador.</strong></p>`;
                 document.getElementById("videoContainer").style.display = "block";
-                document.getElementById("juego").style.display = "none"; // Oculta el juego
+                document.getElementById("juego").style.display = "none"; 
                 const finalMaloVideo = document.getElementById("finalMaloVideo");
-                finalMaloVideo.style.display = "block"; // Muestra el video del final malo
+                finalMaloVideo.style.display = "block"; 
                 finalMaloVideo.play();
-                finalMaloVideo.onended = () => finalMaloAlerta(); // Muestra la alerta tras el video
+                finalMaloVideo.onended = () => finalMaloAlerta(); 
             }
         } else {
             alert("Debes elegir un arma y un sospechoso para hacer una acusación.");
@@ -432,4 +437,3 @@
 </script>
 </body>
 </html>
-
